@@ -27,45 +27,20 @@
     # set this - notebooks will be stored relative to this uri
     S3_NOTEBOOK_URI=s3://path/to/notebooks/
 
-    # and this
-    IPYTHON_MAJOR_VERSION=4
-
-    # optionally set this - checkpoints will be stored locally, relative to this path (for IPython 3)
+    # optionally set this - checkpoints will be stored locally, relative to this path
     CHECKPOINT_ROOT_DIR=~/.checkpoints
 
-    # optionally set this
-    PROFILE=s3nbserver
+    JUPYTER_CONFIG_DIR=${JUPYTER_CONFIG_DIR:-$HOME/.jupyter_config}
+    JUPYTER_CONFIG=${JUPYTER_DIR}/jupyter_notebook_config.py
 
-    # shouldn't need to edit beyond this point
-
-    ## IPython 2.x
-    IPYNB_MANAGER=S3NotebookManager
-    IPYNB_MANAGER_CFG=notebook_manager_class
-
-    ## IPython 3.x or 4.x
-    if [ $IPYTHON_MAJOR_VERSION == 3 ] || [ $IPYTHON_MAJOR_VERSION == 4 ]; then
-        IPYNB_MANAGER=S3ContentsManager
-        IPYNB_MANAGER_CFG=contents_manager_class
-    fi
-
-    IPYTHONDIR=${IPYTHONDIR:-$HOME/.ipython}
-    PROFILE_DIR=${IPYTHONDIR}/profile_${PROFILE}
-
-    if [ ! -d $PROFILE_DIR ]; then
-        ipython profile create $PROFILE
-        IPYNB_CONFIG=${PROFILE_DIR}/ipython_notebook_config.py
-        mv $IPYNB_CONFIG $IPYNB_CONFIG.orig
-        cat > $IPYNB_CONFIG <<EOF
+    mv $JUPYTER_CONFIG $JUPYTER_CONFIG.orig
+    cat > $JUPYTER_CONFIG <<EOF
     c = get_config()
-    c.NotebookApp.${IPYNB_MANAGER_CFG} = 's3nb.${IPYNB_MANAGER}'
-    c.${IPYNB_MANAGER}.s3_base_uri = '$S3_NOTEBOOK_URI'
+    c.NotebookApp.contents_manager_class = 's3nb.S3ContentsManager'
+    c.S3ContentsManager.base_uri = '$S3_NOTEBOOK_URI'
+    c.S3ContentsManager.checkpoints_kwargs = {'root_dir': '${CHECKPOINT_ROOT_DIR}'}
     EOF
-    fi
 
-
-    if  [ $IPYTHON_MAJOR_VERSION == 3 ] || [$IPYTHON_MAJOR_VERSION == 4 ] ; then
-        echo "c.S3ContentsManager.checkpoints_kwargs = {'root_dir': '${CHECKPOINT_ROOT_DIR}'}"  >> ${IPYNB_CONFIG}
-    fi
     ```
 
 3. If you haven't already, configure AWS variables for boto.  [Follow these instructions](http://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs).
