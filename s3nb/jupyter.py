@@ -114,8 +114,8 @@ class S3ContentsManager(ContentsManager):
     def _s3_key_notebook_to_model(self, key, path, content=False):
         self.log.debug("_s3_key_notebook_to_model: %s: %s", key, key.key)
         model = {
-            'name': key.name.rsplit(self.key_delimiter, 1)[-1],
-            'path': key.name.replace(self.prefix, '', 1),
+            'name': key.key.rsplit(self.key_delimiter, 1)[-1],
+            'path': key.key.replace(self.prefix, '', 1),
             'type': 'notebook',
             'created': None,
             'last_modified': key.last_modified,
@@ -125,9 +125,10 @@ class S3ContentsManager(ContentsManager):
             'writable': True,
         }
 
-        self.validate_notebook_model(model)
+        if content:
+            self.validate_notebook_model(model)
 
-        self.log.debug("_s3_key_notebook_to_model: %s: %s", key.name, model)
+        self.log.debug("_s3_key_notebook_to_model: %s: %s", key.key, model)
         return model
 
 
@@ -146,7 +147,7 @@ class S3ContentsManager(ContentsManager):
             elif not k.key.endswith(self.key_delimiter) and not k.key.endswith('.ipynb') and k.key != key.key:
                 content.append(self._s3_key_file_to_model(k, path=None, format=None, content=False))
                 self.log.debug('list_files: found %s', k.key)
-            elif k.name.endswith('.ipynb'):
+            elif k.key.endswith('.ipynb'):
                 content.append(self._s3_key_notebook_to_model(k, path=None, content=False))
                 self.log.debug('list_notebooks: found %s', k.key)
 
@@ -162,14 +163,14 @@ class S3ContentsManager(ContentsManager):
                 with codecs.open(t.name, mode='r', encoding='utf-8') as f:
                     nb = nbformat.read(f, as_version=4)
         except Exception as e:
-            raise web.HTTPError(400, u"Unreadable Notebook: {} {}".format(path, e))
+            raise web.HTTPError(400, u"Unreadable notebook: {} {}".format(path, e))
 
         self.mark_trusted_cells(nb, path)
         return nb
 
     def _load_file_content(self, key, path):
         try:
-            model['content'] = key.get()['Body'].read()
+            return key.get()['Body'].read()
         except Exception as e:
             raise web.HTTPError(400, u"Unreadable file: {} {}".format(path, e))
 
@@ -303,7 +304,7 @@ class S3ContentsManager(ContentsManager):
             return True
 
         key = self._path_to_s3_key(path)
-        if self.bucket.objects.filter(Delimiter=self.key_delimiter, Prefix=key.key, MaxKeys=1):
+        if self.bucket.objects.filter(Delimiter=self.key_delimiter, Prefix=key, MaxKeys=1):
             return True
 
         return False

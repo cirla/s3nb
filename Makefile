@@ -1,6 +1,7 @@
 SSH=vagrant ssh
 
-CONFIG_FILE=config/jupyter_notebook_config.py
+CONFIG_DIR=config
+CONFIG_FILE=${CONFIG_DIR}/jupyter_notebook_config.py
 
 AWS_USER=s3nb
 
@@ -10,7 +11,7 @@ clean:
 	rm -rf clean/ credentials
 
 configure:
-	mv ${CONFIG_FILE} ${CONFIG_FILE}.orig
+	if [ -r ${CONFIG_FILE} ]; then mv ${CONFIG_FILE} ${CONFIG_FILE}.orig; else mkdir -p ${CONFIG_DIR}; touch ${CONFIG_FILE}; fi
 	echo "c = get_config()" >> ${CONFIG_FILE}
 	echo "c.NotebookApp.log_level = 'DEBUG'" >> ${CONFIG_FILE}
 	echo "c.NotebookApp.contents_manager_class = 's3nb.S3ContentsManager'" >> ${CONFIG_FILE}

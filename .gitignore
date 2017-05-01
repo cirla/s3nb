@@ -4,3 +4,8 @@ ipython/
 credentials
 s3nb.log
 .checkpoints/
+build/
+dist/
+*.egg-info
+config/
+venv/
